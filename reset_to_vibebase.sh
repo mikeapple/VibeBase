@@ -1,0 +1,439 @@
+#!/bin/bash
+
+# VibeBase Reset Script
+# This script reverts any customizations back to the original VibeBase template
+# Useful for testing or resetting the template to its original state
+
+set -e  # Exit on error
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+echo -e "${CYAN}"
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║                  🔄 VibeBase Reset Script                     ║"
+echo "║            Revert to Original Template State                  ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo -e "${NC}\n"
+
+# Warning message
+echo -e "${RED}⚠️  WARNING: This will reset your project to the VibeBase template!${NC}\n"
+echo -e "${YELLOW}This script will:${NC}"
+echo -e "  • Rename custom app directory back to 'vibebase_app'"
+echo -e "  • Reset all configuration files to VibeBase defaults"
+echo -e "  • Remove PROJECT_INFO.md"
+echo -e "  • Remove .firebaserc (Firebase project link)"
+echo -e "  • Keep all dependencies and firebase_options.dart"
+echo -e "\n${RED}⚠️  Any custom code changes will be preserved${NC}"
+echo -e "${YELLOW}⚠️  Firebase configuration will need to be redone${NC}\n"
+
+read -p "Are you sure you want to continue? (type 'yes' to confirm): " CONFIRM
+
+if [ "$CONFIRM" != "yes" ]; then
+    echo -e "${YELLOW}Reset cancelled.${NC}"
+    exit 0
+fi
+
+echo -e "\n${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}         Starting Reset Process${NC}"
+echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+
+# ============================================================================
+# STEP 1: Find and Rename App Directory
+# ============================================================================
+
+echo -e "${YELLOW}Step 1: Finding app directory...${NC}"
+
+APP_DIR=""
+if [ -d "vibebase_app" ]; then
+    APP_DIR="vibebase_app"
+    echo -e "${GREEN}✓ Already named 'vibebase_app'${NC}"
+else
+    # Find directory ending with _app
+    APP_DIR=$(find . -maxdepth 1 -type d -name "*_app" ! -name "vibebase_app" | head -1 | sed 's|^\./||')
+    
+    if [ -z "$APP_DIR" ]; then
+        echo -e "${RED}❌ No app directory found${NC}"
+        exit 1
+    fi
+    
+    echo -e "${YELLOW}Found: $APP_DIR${NC}"
+    echo -e "${YELLOW}Renaming to vibebase_app...${NC}"
+    mv "$APP_DIR" "vibebase_app"
+    APP_DIR="vibebase_app"
+    echo -e "${GREEN}✓ Directory renamed${NC}"
+fi
+
+# ============================================================================
+# STEP 2: Reset Configuration Files
+# ============================================================================
+
+echo -e "\n${YELLOW}Step 2: Resetting configuration files...${NC}"
+
+cd vibebase_app
+
+# Reset pubspec.yaml
+if [ -f "pubspec.yaml" ]; then
+    echo -e "${YELLOW}Resetting pubspec.yaml...${NC}"
+    sed -i.bak "s/name: .*/name: vibebase_app/" pubspec.yaml
+    sed -i.bak "s/description:.*/description: \"A new Flutter project.\"/" pubspec.yaml
+    rm -f pubspec.yaml.bak
+    echo -e "${GREEN}✓ pubspec.yaml reset${NC}"
+fi
+
+# Reset main.dart to template
+if [ -f "lib/main.dart" ]; then
+    echo -e "${YELLOW}Resetting main.dart to template...${NC}"
+    cat > lib/main.dart << 'EOF'
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  runApp(const VibeBaseApp());
+}
+
+class VibeBaseApp extends StatelessWidget {
+  const VibeBaseApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'VibeBase',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const HomePage(),
+    );
+  }
+}
+
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: const Text('VibeBase'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              Icons.rocket_launch,
+              size: 100,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 30),
+            const Text(
+              'Welcome to VibeBase!',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Your multiplatform Flutter app with Firebase',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            ),
+            const SizedBox(height: 40),
+            const Card(
+              margin: EdgeInsets.symmetric(horizontal: 40),
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 40),
+                    SizedBox(height: 10),
+                    Text(
+                      'Firebase Connected',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Authentication, Firestore, and Storage ready',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+EOF
+    echo -e "${GREEN}✓ main.dart reset to template${NC}"
+fi
+
+# Reset constants.dart
+if [ -f "lib/utils/constants.dart" ]; then
+    echo -e "${YELLOW}Resetting constants.dart...${NC}"
+    sed -i.bak "s/appName = '[^']*'/appName = 'VibeBase'/" lib/utils/constants.dart
+    rm -f lib/utils/constants.dart.bak
+    echo -e "${GREEN}✓ constants.dart reset${NC}"
+fi
+
+# Reset firebase_options.dart to placeholder
+if [ -f "lib/firebase_options.dart" ]; then
+    echo -e "${YELLOW}Resetting firebase_options.dart to placeholder...${NC}"
+    cat > lib/firebase_options.dart << 'EOF'
+// File generated by FlutterFire CLI.
+// This is a placeholder file. Run ./configure_firebase.sh or ./setup.sh to generate the real configuration.
+// ignore_for_file: type=lint
+import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+
+/// Default [FirebaseOptions] for use with your Firebase apps.
+///
+/// Example:
+/// ```dart
+/// import 'firebase_options.dart';
+/// // ...
+/// await Firebase.initializeApp(
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// ```
+class DefaultFirebaseOptions {
+  static FirebaseOptions get currentPlatform {
+    if (kIsWeb) {
+      return web;
+    }
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return android;
+      case TargetPlatform.iOS:
+        return ios;
+      case TargetPlatform.macOS:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      case TargetPlatform.windows:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      case TargetPlatform.linux:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for linux - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
+      default:
+        throw UnsupportedError(
+          'DefaultFirebaseOptions are not supported for this platform.',
+        );
+    }
+  }
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'YOUR_API_KEY',
+    appId: 'YOUR_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'your-project-id',
+    authDomain: 'your-project-id.firebaseapp.com',
+    storageBucket: 'your-project-id.appspot.com',
+  );
+
+  static const FirebaseOptions android = FirebaseOptions(
+    apiKey: 'YOUR_API_KEY',
+    appId: 'YOUR_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'your-project-id',
+    storageBucket: 'your-project-id.appspot.com',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'YOUR_API_KEY',
+    appId: 'YOUR_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'your-project-id',
+    storageBucket: 'your-project-id.appspot.com',
+    iosBundleId: 'com.vibebase.vibebaseApp',
+  );
+}
+EOF
+    echo -e "${GREEN}✓ firebase_options.dart reset to placeholder${NC}"
+fi
+
+# Reset Android configuration
+if [ -f "android/app/build.gradle" ]; then
+    echo -e "${YELLOW}Resetting Android configuration...${NC}"
+    sed -i.bak "s/applicationId \".*\"/applicationId \"com.vibebase.vibebase_app\"/" android/app/build.gradle
+    rm -f android/app/build.gradle.bak
+    echo -e "${GREEN}✓ Android applicationId reset${NC}"
+fi
+
+if [ -f "android/app/src/main/AndroidManifest.xml" ]; then
+    sed -i.bak "s/android:label=\"[^\"]*\"/android:label=\"vibebase_app\"/" android/app/src/main/AndroidManifest.xml
+    rm -f android/app/src/main/AndroidManifest.xml.bak
+    echo -e "${GREEN}✓ Android label reset${NC}"
+fi
+
+# Reset iOS configuration
+if [ -f "ios/Runner/Info.plist" ]; then
+    echo -e "${YELLOW}Resetting iOS configuration...${NC}"
+    # Only reset the display name and bundle name, not all string values
+    sed -i.bak '/<key>CFBundleDisplayName<\/key>/{
+        n
+        s|<string>.*</string>|<string>Vibebase App</string>|
+    }' ios/Runner/Info.plist
+    
+    sed -i.bak '/<key>CFBundleName<\/key>/{
+        n
+        s|<string>.*</string>|<string>vibebase_app</string>|
+    }' ios/Runner/Info.plist
+    
+    rm -f ios/Runner/Info.plist.bak
+    echo -e "${GREEN}✓ iOS Info.plist reset${NC}"
+fi
+
+# Reset web configuration
+if [ -f "web/index.html" ]; then
+    echo -e "${YELLOW}Resetting web configuration...${NC}"
+    sed -i.bak "s/<title>[^<]*<\/title>/<title>vibebase_app<\/title>/" web/index.html
+    rm -f web/index.html.bak
+    echo -e "${GREEN}✓ web/index.html reset${NC}"
+fi
+
+if [ -f "web/manifest.json" ]; then
+    sed -i.bak "s/\"name\": \"[^\"]*\"/\"name\": \"vibebase_app\"/" web/manifest.json
+    sed -i.bak "s/\"short_name\": \"[^\"]*\"/\"short_name\": \"vibebase_app\"/" web/manifest.json
+    rm -f web/manifest.json.bak
+    echo -e "${GREEN}✓ web/manifest.json reset${NC}"
+fi
+
+cd ..
+
+# ============================================================================
+# STEP 3: Reset Root Configuration Files
+# ============================================================================
+
+echo -e "\n${YELLOW}Step 3: Resetting root configuration...${NC}"
+
+# Reset firebase.json
+if [ -f "firebase.json" ]; then
+    echo -e "${YELLOW}Resetting firebase.json...${NC}"
+    sed -i.bak "s|\"public\": \".*\"|\"public\": \"vibebase_app/build/web\"|" firebase.json
+    rm -f firebase.json.bak
+    echo -e "${GREEN}✓ firebase.json reset${NC}"
+fi
+
+# Reset README.md
+if [ -f "README.md" ]; then
+    echo -e "${YELLOW}Resetting README.md...${NC}"
+    # Only replace the main title (first line) and directory references
+    sed -i.bak "1s/^# .*/# VibeBase/" README.md
+    sed -i.bak "s/cd [a-z_]*_app/cd vibebase_app/g" README.md
+    rm -f README.md.bak
+    echo -e "${GREEN}✓ README.md reset${NC}"
+fi
+
+# ============================================================================
+# STEP 4: Clean Up Generated Files
+# ============================================================================
+
+echo -e "\n${YELLOW}Step 4: Cleaning up generated files...${NC}"
+
+# Remove PROJECT_INFO.md if it exists
+if [ -f "PROJECT_INFO.md" ]; then
+    rm PROJECT_INFO.md
+    echo -e "${GREEN}✓ Removed PROJECT_INFO.md${NC}"
+fi
+
+# Remove .firebaserc if it exists (Firebase project link)
+if [ -f ".firebaserc" ]; then
+    rm .firebaserc
+    echo -e "${GREEN}✓ Removed .firebaserc${NC}"
+fi
+
+# Note: We keep firebase_options.dart as a placeholder
+# Users can regenerate it by running configure_firebase.sh
+
+# ============================================================================
+# STEP 5: Clean Build Artifacts (Optional)
+# ============================================================================
+
+echo -e "\n${YELLOW}Would you like to clean build artifacts?${NC}"
+echo -e "${CYAN}(This will run 'flutter clean' - recommended for a fresh start)${NC}"
+read -p "Clean build artifacts? (y/n): " CLEAN_BUILD
+
+if [[ "$CLEAN_BUILD" =~ ^[Yy]$ ]]; then
+    echo -e "\n${YELLOW}Cleaning build artifacts...${NC}"
+    cd vibebase_app
+    flutter clean
+    echo -e "${GREEN}✓ Build artifacts cleaned${NC}"
+    cd ..
+else
+    echo -e "${YELLOW}Skipping build clean${NC}"
+fi
+
+# ============================================================================
+# COMPLETION
+# ============================================================================
+
+echo -e "\n${GREEN}"
+echo "╔════════════════════════════════════════════════════════════════╗"
+echo "║                  ✅ Reset Complete!                           ║"
+echo "╚════════════════════════════════════════════════════════════════╝"
+echo -e "${NC}\n"
+
+echo -e "${CYAN}VibeBase has been reset to template state!${NC}\n"
+
+echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}                    What Was Reset${NC}"
+echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}✓${NC} App directory renamed to 'vibebase_app'"
+echo -e "${GREEN}✓${NC} main.dart reset to template"
+echo -e "${GREEN}✓${NC} firebase_options.dart reset to placeholder"
+echo -e "${GREEN}✓${NC} All configuration files reset to defaults"
+echo -e "${GREEN}✓${NC} Bundle identifiers reset"
+echo -e "${GREEN}✓${NC} App name reset to 'VibeBase'"
+echo -e "${GREEN}✓${NC} iOS Info.plist properly restored"
+echo -e "${GREEN}✓${NC} PROJECT_INFO.md removed"
+echo -e "${GREEN}✓${NC} Firebase project link removed"
+echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+
+echo -e "${YELLOW}📝 What Was Preserved:${NC}"
+echo -e "  • All dependencies in pubspec.yaml"
+echo -e "  • Custom code in services/, models/, screens/, widgets/"
+echo -e "  • Firebase security rules files"
+echo -e "  • Documentation files"
+echo -e "  • Utility files (constants.dart, validators.dart)\n"
+
+echo -e "${CYAN}Next Steps:${NC}"
+echo -e "  1. Run ${GREEN}./setup.sh${NC} to customize for a new project"
+echo -e "  2. Or keep as VibeBase template for future use\n"
+
+echo -e "${GREEN}🎉 Ready for a fresh start!${NC}\n"

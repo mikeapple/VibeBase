@@ -48,28 +48,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    appId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    messagingSenderId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    projectId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    authDomain: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    storageBucket: 'PLACEHOLDER-CONFIGURE-FIREBASE',
+    apiKey: 'AIzaSyCGk3uIctgw0wx-b2Mi1lDZMFYADcHrrSM',
+    appId: '1:241414034513:web:7fb63f9b93f8f996fd9470',
+    messagingSenderId: '241414034513',
+    projectId: 'testg2-8640',
+    authDomain: 'testg2-8640.firebaseapp.com',
+    storageBucket: 'testg2-8640.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    appId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    messagingSenderId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    projectId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    storageBucket: 'PLACEHOLDER-CONFIGURE-FIREBASE',
+    apiKey: 'AIzaSyAse95eBJ9bcaz9WmtBt_1clGbJfDTaxtg',
+    appId: '1:241414034513:android:9d85d4b6c2c03e8cfd9470',
+    messagingSenderId: '241414034513',
+    projectId: 'testg2-8640',
+    storageBucket: 'testg2-8640.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    appId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    messagingSenderId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    projectId: 'PLACEHOLDER-CONFIGURE-FIREBASE',
-    storageBucket: 'PLACEHOLDER-CONFIGURE-FIREBASE',
+    apiKey: 'AIzaSyCIahd0GVTAGsJH-kAdBxjjd4Z3GpZaTqw',
+    appId: '1:241414034513:ios:f08a6c9da0de19bdfd9470',
+    messagingSenderId: '241414034513',
+    projectId: 'testg2-8640',
+    storageBucket: 'testg2-8640.firebasestorage.app',
     iosBundleId: 'com.vibebase.vibebaseApp',
   );
+
 }

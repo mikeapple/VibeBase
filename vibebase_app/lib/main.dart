@@ -37,7 +37,7 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('VibeBase'),
+        title: const Text('test1'),
       ),
       body: Center(
         child: Column(

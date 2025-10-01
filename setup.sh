@@ -273,23 +273,60 @@ if [[ "$AUTO_FIREBASE" =~ ^[Yy]$ ]]; then
     if firebase projects:create "$FIREBASE_PROJECT_ID" --display-name="$APP_NAME" 2>&1 | tee /tmp/firebase_create.log; then
         echo -e "${GREEN}✓ Firebase project created!${NC}"
         
-        # Wait a moment for project to be ready
-        echo -e "${YELLOW}Waiting for project initialization...${NC}"
-        sleep 3
+        # Wait for project to be available in Firebase system (can take up to 2 minutes)
+        echo -e "\n${YELLOW}⏳ Waiting for Firebase project to be fully available...${NC}"
+        echo -e "${CYAN}(New projects can take up to 2 minutes to propagate)${NC}\n"
         
-        # Configure FlutterFire
-        echo -e "\n${YELLOW}Configuring Firebase for your app...${NC}"
-        cd "$NEW_DIR"
+        MAX_WAIT_TIME=120  # 2 minutes
+        WAIT_INTERVAL=10   # Check every 10 seconds
+        ELAPSED=0
+        PROJECT_FOUND=false
         
-        if flutterfire configure --project="$FIREBASE_PROJECT_ID" --platforms=android,ios,web --yes --out=lib/firebase_options.dart; then
-            echo -e "${GREEN}✓ Firebase configured for all platforms${NC}"
-            FIREBASE_CONFIGURED=true
-        else
-            echo -e "${RED}⚠️  FlutterFire configuration failed. You may need to run ./configure_firebase.sh manually${NC}"
+        while [ $ELAPSED -lt $MAX_WAIT_TIME ]; do
+            echo -e "${YELLOW}⏱  Checking project availability... (${ELAPSED}s / ${MAX_WAIT_TIME}s)${NC}"
+            
+            # Check if project appears in the list
+            if firebase projects:list 2>/dev/null | grep -q "$FIREBASE_PROJECT_ID"; then
+                echo -e "${GREEN}✓ Project is now available!${NC}"
+                PROJECT_FOUND=true
+                break
+            fi
+            
+            # Wait before next check
+            sleep $WAIT_INTERVAL
+            ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+            
+            if [ $ELAPSED -lt $MAX_WAIT_TIME ]; then
+                echo -e "${CYAN}   Still waiting... (Firebase is propagating the new project)${NC}"
+            fi
+        done
+        
+        if [ "$PROJECT_FOUND" = false ]; then
+            echo -e "${RED}⚠️  Project not available after ${MAX_WAIT_TIME} seconds${NC}"
+            echo -e "${YELLOW}The project was created but may need more time to propagate.${NC}"
+            echo -e "${YELLOW}You can run ./configure_firebase.sh later to complete setup.${NC}"
             FIREBASE_CONFIGURED=false
+        else
+            # Extra buffer to ensure project is fully ready
+            echo -e "${YELLOW}Waiting a few more seconds for project initialization...${NC}"
+            sleep 5
+            
+            # Configure FlutterFire
+            echo -e "\n${YELLOW}Configuring Firebase for your app...${NC}"
+            cd "$NEW_DIR"
+            
+            if flutterfire configure --project="$FIREBASE_PROJECT_ID" --platforms=android,ios,web --yes --out=lib/firebase_options.dart; then
+                echo -e "${GREEN}✓ Firebase configured for all platforms${NC}"
+                FIREBASE_CONFIGURED=true
+            else
+                echo -e "${RED}⚠️  FlutterFire configuration failed.${NC}"
+                echo -e "${YELLOW}The project exists but configuration timed out.${NC}"
+                echo -e "${YELLOW}Run ./configure_firebase.sh to complete setup.${NC}"
+                FIREBASE_CONFIGURED=false
+            fi
+            
+            cd ..
         fi
-        
-        cd ..
         
         # Set up Firebase project
         if [ "$FIREBASE_CONFIGURED" = true ]; then
@@ -324,14 +361,119 @@ if [[ "$AUTO_FIREBASE" =~ ^[Yy]$ ]]; then
                 RULES_DEPLOYED=false
             fi
             
-            echo -e "\n${YELLOW}📝 Important: You still need to manually enable these services:${NC}"
-            echo -e "   ${CYAN}• Authentication (Email/Password, Google, etc.)${NC}"
-            echo -e "   ${CYAN}• Firestore Database (create in test mode)${NC}"
-            echo -e "   ${CYAN}• Storage (optional, create in test mode)${NC}"
-            echo -e "\n   Visit: ${CYAN}https://console.firebase.google.com/project/$FIREBASE_PROJECT_ID${NC}"
+            # Configure Authentication
+            echo -e "\n${YELLOW}Would you like to enable Firebase Authentication?${NC}"
+            echo -e "${CYAN}(This will enable Email/Password, Google, and Apple Sign-In)${NC}"
+            read -p "Enable authentication providers? (y/n): " ENABLE_AUTH
+            
+            AUTH_CONFIGURED=false
+            if [[ "$ENABLE_AUTH" =~ ^[Yy]$ ]]; then
+                echo -e "\n${YELLOW}Configuring Firebase Authentication...${NC}"
+                
+                # Check if gcloud is authenticated
+                if ! gcloud auth print-access-token &>/dev/null; then
+                    echo -e "${YELLOW}⚠️  gcloud not authenticated. Attempting to authenticate...${NC}"
+                    gcloud auth login --brief
+                fi
+                
+                # Get access token for Firebase API
+                ACCESS_TOKEN=$(gcloud auth print-access-token 2>/dev/null)
+                
+                if [ -z "$ACCESS_TOKEN" ]; then
+                    echo -e "${RED}⚠️  Could not get authentication token${NC}"
+                    echo -e "${YELLOW}You'll need to enable authentication manually in the console${NC}"
+                else
+                    # Enable Email/Password authentication
+                    echo -e "${CYAN}Enabling Email/Password authentication...${NC}"
+                    AUTH_RESPONSE=$(curl -s -w "\n%{http_code}" -X PATCH \
+                        "https://identitytoolkit.googleapis.com/admin/v2/projects/$FIREBASE_PROJECT_ID/config?updateMask=signIn.email.enabled,signIn.email.passwordRequired" \
+                        -H "Authorization: Bearer $ACCESS_TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d '{
+                            "signIn": {
+                                "email": {
+                                    "enabled": true,
+                                    "passwordRequired": true
+                                }
+                            }
+                        }')
+                    
+                    HTTP_CODE=$(echo "$AUTH_RESPONSE" | tail -n1)
+                    if [ "$HTTP_CODE" = "200" ]; then
+                        echo -e "${GREEN}✓ Email/Password authentication enabled${NC}"
+                        AUTH_CONFIGURED=true
+                    else
+                        echo -e "${YELLOW}⚠️  Could not auto-enable Email/Password (HTTP $HTTP_CODE)${NC}"
+                        echo -e "${CYAN}   This may require enabling the Identity Toolkit API${NC}"
+                    fi
+                    
+                    # Enable Anonymous authentication (useful for development)
+                    echo -e "${CYAN}Enabling Anonymous authentication...${NC}"
+                    ANON_RESPONSE=$(curl -s -w "\n%{http_code}" -X PATCH \
+                        "https://identitytoolkit.googleapis.com/admin/v2/projects/$FIREBASE_PROJECT_ID/config?updateMask=signIn.anonymous.enabled" \
+                        -H "Authorization: Bearer $ACCESS_TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d '{
+                            "signIn": {
+                                "anonymous": {
+                                    "enabled": true
+                                }
+                            }
+                        }')
+                    
+                    HTTP_CODE=$(echo "$ANON_RESPONSE" | tail -n1)
+                    if [ "$HTTP_CODE" = "200" ]; then
+                        echo -e "${GREEN}✓ Anonymous authentication enabled${NC}"
+                    else
+                        echo -e "${YELLOW}⚠️  Could not enable Anonymous auth${NC}"
+                    fi
+                    
+                    # Note about Google and Apple Sign-In
+                    echo -e "\n${CYAN}Additional Sign-In Methods:${NC}"
+                    echo -e "${YELLOW}ℹ️  Google Sign-In:${NC}"
+                    echo -e "   • Enabled by default for web"
+                    echo -e "   • Android: Add SHA-1 fingerprint in Firebase Console"
+                    echo -e "   • iOS: Add reversed client ID to Info.plist"
+                    
+                    echo -e "\n${YELLOW}ℹ️  Apple Sign-In:${NC}"
+                    echo -e "   • Requires Apple Developer account"
+                    echo -e "   • Must configure Service ID and domains"
+                    echo -e "   • Enable in Firebase Console → Authentication → Sign-in method"
+                    
+                    if [ "$AUTH_CONFIGURED" = true ]; then
+                        echo -e "\n${GREEN}✓ Core authentication providers configured!${NC}"
+                        echo -e "${CYAN}Email/Password and Anonymous auth are ready to use${NC}"
+                    else
+                        echo -e "\n${YELLOW}⚠️  Authentication setup incomplete${NC}"
+                        echo -e "${CYAN}Visit console to complete configuration${NC}"
+                    fi
+                fi
+            else
+                echo -e "${YELLOW}Skipping authentication setup${NC}"
+            fi
+            
+            # Summary of what still needs manual setup
+            echo -e "\n${YELLOW}📝 Manual Setup Required:${NC}"
+            NEEDS_MANUAL=()
+            
+            if [ "$AUTH_CONFIGURED" = false ]; then
+                NEEDS_MANUAL+=("${CYAN}• Authentication - Enable sign-in methods${NC}")
+            fi
+            
+            NEEDS_MANUAL+=("${CYAN}• Firestore Database - Create database in test mode${NC}")
+            NEEDS_MANUAL+=("${CYAN}• Storage - (Optional) Create storage bucket${NC}")
+            
+            if [ "$AUTH_CONFIGURED" = true ]; then
+                NEEDS_MANUAL+=("${CYAN}• Apple Sign-In - Complete configuration with Apple Developer account${NC}")
+            fi
+            
+            if [ ${#NEEDS_MANUAL[@]} -gt 0 ]; then
+                printf '%s\n' "${NEEDS_MANUAL[@]}"
+                echo -e "\n   Visit: ${CYAN}https://console.firebase.google.com/project/$FIREBASE_PROJECT_ID${NC}"
+            fi
             
             if [ "$RULES_DEPLOYED" = false ]; then
-                echo -e "\n   ${YELLOW}After enabling services, deploy rules with:${NC}"
+                echo -e "\n   ${YELLOW}After enabling Firestore/Storage, deploy rules with:${NC}"
                 echo -e "   ${CYAN}firebase deploy --only firestore:rules,storage:rules${NC}"
             fi
         fi

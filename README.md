@@ -4,81 +4,104 @@ A production-ready Flutter application template with Firebase backend support fo
 
 ## ✨ Features
 
-- 🎯 **Interactive Setup Wizard** - Automatically renames and configures your app
+- 🎯 **One-and-Done Setup** - Automatic Firebase project creation and configuration
+- 🔐 **Auto-Auth Setup** - Email/Password and Anonymous authentication enabled automatically
 - 🔥 **Firebase Integration** - Pre-configured Auth, Firestore, Storage, and Analytics
 - 📱 **Multi-Platform** - Single codebase for Android, iOS, and Web
 - 🏗️ **Clean Architecture** - Service layer pattern with organized folder structure
 - 🔒 **Production-Ready Security** - Template security rules for Firestore and Storage
-- 🚀 **Automated Scripts** - Setup, configuration, and deployment automation
+- 🚀 **Automated Scripts** - Setup, configuration, deployment, and reset automation
 - 📚 **Comprehensive Docs** - Detailed guides and code examples
+- 🔄 **Reset Script** - Return to template state for testing or new projects
 
-## 🚀 Quick Start for New Projects
+## 🚀 Quick Start
 
-### 1. Clone as Template
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/your-org/VibeBase.git MyNewApp
 cd MyNewApp
-rm -rf .git && git init  # Start fresh
+rm -rf .git && git init  # Start fresh git history
 ```
 
-### 2. Run Interactive Setup
+### 2. Run One-and-Done Setup
 ```bash
 ./setup.sh
 ```
 
-The wizard will ask you for:
-- **App Name** (e.g., "TaskMaster Pro")
-- **Organization ID** (e.g., "com.mycompany")
-- **Description** (e.g., "A task management app")
+The interactive wizard will:
+- ✅ Ask for your **App Name**, **Organization ID**, and **Description**
+- ✅ Rename `vibebase_app` → `your_app_name_app`
+- ✅ Update all config files (pubspec.yaml, AndroidManifest.xml, Info.plist, etc.)
+- ✅ Update bundle identifiers for all platforms
+- ✅ Install Firebase CLI and dependencies
+- ✅ **Create Firebase project automatically** (optional)
+- ✅ **Configure Firebase** for Android, iOS, and Web
+- ✅ **Enable Email/Password authentication** (optional)
+- ✅ **Enable Anonymous authentication** (optional)
+- ✅ Deploy security rules (optional)
+- ✅ Generate `PROJECT_INFO.md` with project details
 
-The script automatically:
-- ✅ Renames `vibebase_app` to `your_app_name_app`
-- ✅ Updates all configuration files (pubspec.yaml, AndroidManifest.xml, Info.plist, etc.)
-- ✅ Updates bundle identifiers for Android and iOS
-- ✅ Installs Firebase CLI and all dependencies
-- ✅ Generates `PROJECT_INFO.md` with your project details
+**The script waits for Firebase project propagation** (up to 2 minutes) to ensure reliable configuration.
 
-### 3. Configure Firebase
-```bash
-./configure_firebase.sh
-```
-- Enter your Firebase Project ID
-- Automatically configures all platforms
-
-### 4. Enable Firebase Services
+### 3. Enable Firebase Services (Manual)
 - Visit [Firebase Console](https://console.firebase.google.com/)
-- Enable Authentication, Firestore, Storage
+- Enable Firestore Database (test mode)
+- Enable Storage (test mode, optional)
 
-### 5. Deploy & Run
+### 4. Start Building
 ```bash
-firebase deploy --only firestore:rules,storage:rules
 cd your_app_name_app
 flutter run
 ```
 
-**Total time from clone to first run: ~10 minutes!**
+**Total time from clone to first run: ~5-7 minutes!**
 
 For detailed instructions, see [TEMPLATE_USAGE.md](TEMPLATE_USAGE.md)
 
-## 📋 What You Get
+## 🔄 Reset to Template State
+
+Want to test the setup process again or start a different project?
+
+```bash
+./reset_to_vibebase.sh
+```
+
+This script will:
+- ✅ Rename app directory back to `vibebase_app`
+- ✅ Reset `main.dart` to template
+- ✅ Reset `firebase_options.dart` to placeholder
+- ✅ Restore all configuration files
+- ✅ Reset bundle identifiers
+- ✅ Fix iOS Info.plist properly
+- ✅ Remove PROJECT_INFO.md
+- ✅ Remove Firebase project link (.firebaserc)
+- ✅ Preserve your custom code in services/models/screens/widgets
+- ✅ Keep all dependencies
+
+After reset, run `./setup.sh` again to create a new project!
+
+## 📦 What's Included
 
 ### Automated Setup
-- Interactive wizard collects project information
+- Interactive wizard with smart prompts
 - Automatic file renaming and configuration
 - Bundle identifier updates across all platforms
 - Dependency installation
+- **Firebase project creation with retry logic**
+- **Authentication provider configuration**
 
-### Code Templates
+### Pre-Built Services
 - **AuthService** - Complete authentication with error handling
 - **FirestoreService** - Database operations with real-time streams
 - **UserModel** - Data model with serialization patterns
 - **Validators** - Form validation utilities
 - **Constants** - Centralized configuration
 
-### Scripts
-- `setup.sh` - Transform VibeBase into your custom app
-- `configure_firebase.sh` - Connect to Firebase project
+### Automation Scripts
+- `setup.sh` - **One-and-done setup** with Firebase project creation
+- `configure_firebase.sh` - Connect to existing Firebase project
 - `deploy.sh` - Deploy to Web, build Android/iOS apps
+- `reset_to_vibebase.sh` - **Reset to template state**
 
 ### Documentation
 - `TEMPLATE_USAGE.md` - How to use VibeBase as a template
@@ -86,119 +109,121 @@ For detailed instructions, see [TEMPLATE_USAGE.md](TEMPLATE_USAGE.md)
 - `QUICK_REFERENCE.md` - Common commands and code snippets
 - `ACTION_ITEMS.md` - Development checklist
 
-## 📱 Running the App
+## 🎯 Development Workflow
 
-### Web
+### Web Development
 ```bash
 cd vibebase_app
 flutter run -d chrome
 ```
 
-### Android
+### Android Development
 ```bash
 cd vibebase_app
 flutter run -d android
 ```
 
-### iOS
+### iOS Development (macOS only)
 ```bash
 cd vibebase_app
 flutter run -d ios
 ```
 
-## 🏗️ Project Structure
-
-```
-VibeBase/
-├── vibebase_app/           # Flutter application
-│   ├── lib/
-│   │   ├── main.dart
-│   │   ├── models/         # Data models
-│   │   ├── services/       # Firebase & business logic
-│   │   ├── screens/        # UI screens
-│   │   ├── widgets/        # Reusable widgets
-│   │   └── utils/          # Utilities
-│   ├── android/            # Android platform code
-│   ├── ios/                # iOS platform code
-│   ├── web/                # Web platform code
-│   └── test/               # Tests
-├── setup.sh                # Initial setup script
-├── configure_firebase.sh   # Firebase configuration script
-├── firestore.rules         # Firestore security rules
-├── storage.rules           # Storage security rules
-├── firebase.json           # Firebase configuration
-└── SETUP_GUIDE.md          # Detailed setup guide
-```
-
-## 🔥 Firebase Services
-
-This project is configured to use:
-- **Firebase Authentication** - User authentication
-- **Cloud Firestore** - NoSQL database
-- **Firebase Storage** - File storage
-- **Firebase Analytics** - App analytics
-- **Firebase Hosting** - Web hosting (optional)
-
-## 🧪 Testing
-
+### Running Tests
 ```bash
 cd vibebase_app
 flutter test
 ```
 
-## 📦 Building
-
-### Android APK
+### Deploying Changes
 ```bash
-cd vibebase_app
-flutter build apk --release
+./deploy.sh  # Interactive deployment menu
 ```
 
-### iOS
-```bash
-cd vibebase_app
-flutter build ios --release
+## 🏗️ Project Structure
+
+```
+vibebase_app/
+├── lib/
+│   ├── main.dart              # App entry point with Firebase init
+│   ├── firebase_options.dart  # Auto-generated Firebase config
+│   ├── models/                # Data models
+│   │   └── user_model.dart
+│   ├── services/              # Business logic & Firebase services
+│   │   ├── auth_service.dart
+│   │   └── firestore_service.dart
+│   ├── screens/               # Full-page UI screens (add yours here)
+│   ├── widgets/               # Reusable UI components (add yours here)
+│   └── utils/                 # Helper functions
+│       ├── constants.dart
+│       └── validators.dart
+├── android/                   # Android-specific code
+├── ios/                       # iOS-specific code
+├── web/                       # Web-specific code
+└── pubspec.yaml              # Dependencies
 ```
 
-### Web
-```bash
-cd vibebase_app
-flutter build web --release
-```
+## 🔐 Firebase Authentication
+
+The setup script can automatically enable:
+- ✅ **Email/Password** - Ready to use immediately
+- ✅ **Anonymous** - Great for development/testing
+- 📝 **Google Sign-In** - Instructions provided for platform-specific setup
+- 📝 **Apple Sign-In** - Manual setup required (Apple Developer account needed)
 
 ## 🔒 Security
 
-- Review and customize `firestore.rules` for your use case
-- Review and customize `storage.rules` for your use case
-- Deploy rules: `firebase deploy --only firestore:rules,storage:rules`
-- Never commit sensitive credentials to version control
+The template includes production-ready security rules for:
+- **Firestore** - User-scoped read/write access with helper functions
+- **Storage** - User-scoped file access with size/type validation
 
-## 📚 Documentation
+Deploy with:
+```bash
+firebase deploy --only firestore:rules,storage:rules
+```
 
-- [Setup Guide](SETUP_GUIDE.md) - Detailed setup instructions
-- [Flutter Documentation](https://docs.flutter.dev/)
-- [Firebase Documentation](https://firebase.google.com/docs)
-- [FlutterFire Documentation](https://firebase.flutter.dev/)
+## 📚 Key Documentation
+
+- **[TEMPLATE_USAGE.md](TEMPLATE_USAGE.md)** - Complete template usage guide
+- **[SETUP_GUIDE.md](SETUP_GUIDE.md)** - Detailed setup instructions
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Common commands
+- **[ACTION_ITEMS.md](ACTION_ITEMS.md)** - Development checklist
+
+## 🛠️ Requirements
+
+- Flutter SDK 3.0+
+- Dart 3.0+
+- Firebase CLI (auto-installed by setup script)
+- For iOS: Xcode
+- For Android: Android Studio
+- Node.js & npm (for Firebase CLI)
+
+## 💡 Pro Tips
+
+1. **Testing Setup**: Use `./reset_to_vibebase.sh` to reset and test setup repeatedly
+2. **Multiple Projects**: Clone VibeBase multiple times for different apps
+3. **Firebase Propagation**: The setup script automatically waits for new Firebase projects to be available
+4. **Authentication**: Email/Password auth is enabled automatically during setup
+5. **Custom Code**: All your custom code in services/models/screens/widgets is preserved during reset
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+This is a template repository. Feel free to fork and customize for your needs!
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details
 
-## 🆘 Support
+## 🎉 Get Started Now!
 
-For issues and questions:
-- Check [SETUP_GUIDE.md](SETUP_GUIDE.md)
-- Review existing GitHub Issues
-- Create a new issue if needed
+```bash
+git clone https://github.com/your-org/VibeBase.git MyAwesomeApp
+cd MyAwesomeApp
+./setup.sh
+# Answer a few questions, grab a coffee ☕
+# Your app is ready! 🚀
+```
 
 ---
 
-Built with ❤️ using Flutter and Firebase
+**Built with ❤️ for the Flutter community**
