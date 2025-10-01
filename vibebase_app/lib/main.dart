@@ -37,18 +37,18 @@ class HomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: const Text('test1'),
+        title: const Text('VibeBase'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Icon(
+            Icon(
               Icons.rocket_launch,
               size: 100,
-              color: Colors.deepPurple,
+              color: Theme.of(context).colorScheme.primary,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
             const Text(
               'Welcome to VibeBase!',
               style: TextStyle(
@@ -56,26 +56,41 @@ class HomePage extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Your multiplatform Flutter app with Firebase',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Your multiplatform Flutter app with Firebase',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: () {
-                // TODO: Navigate to authentication screen
-              },
-              icon: const Icon(Icons.login),
-              label: const Text('Get Started'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+            const Card(
+              margin: EdgeInsets.symmetric(horizontal: 40),
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green, size: 40),
+                    SizedBox(height: 10),
+                    Text(
+                      'Firebase Connected',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Authentication, Firestore, and Storage ready',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
                 ),
               ),
             ),

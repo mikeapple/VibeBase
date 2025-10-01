@@ -491,11 +491,203 @@ else
 fi
 
 # ============================================================================
-# STEP 6: Update Documentation
+# STEP 6: Android Keystore Generation
 # ============================================================================
 
 echo -e "\n${BLUE}═══════════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}         Step 6: Generating Documentation${NC}"
+echo -e "${BLUE}         Step 6: Android Keystore Configuration${NC}"
+echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+
+echo -e "${YELLOW}Would you like to generate an Android release keystore?${NC}"
+echo -e "${CYAN}(Required for releasing Android apps to Google Play Store)${NC}"
+read -p "Generate keystore? (y/n): " GENERATE_KEYSTORE
+
+KEYSTORE_CREATED=false
+if [[ "$GENERATE_KEYSTORE" =~ ^[Yy]$ ]]; then
+    # Check if keytool is available
+    if ! command -v keytool &> /dev/null; then
+        echo -e "${RED}❌ keytool not found. Please install Java JDK.${NC}"
+        echo -e "${YELLOW}Skipping keystore generation${NC}"
+    else
+        echo -e "\n${YELLOW}Setting up Android signing configuration...${NC}"
+        
+        # Create keystore directory
+        mkdir -p "$NEW_DIR/android/keystore"
+        
+        # Generate secure random password
+        KEYSTORE_PASSWORD=$(openssl rand -base64 24 | tr -d "=+/" | cut -c1-20)
+        KEY_PASSWORD=$(openssl rand -base64 24 | tr -d "=+/" | cut -c1-20)
+        
+        # Get organization info for certificate
+        CERT_CN="$APP_NAME"
+        CERT_O="$ORG_ID"
+        
+        echo -e "${CYAN}Generating release keystore...${NC}"
+        
+        # Generate keystore
+        if keytool -genkey -v \
+            -keystore "$NEW_DIR/android/keystore/release.jks" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -alias release \
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            -dname "CN=$CERT_CN, O=$CERT_O, C=US" \
+            2>/dev/null; then
+            
+            echo -e "${GREEN}✓ Keystore generated successfully${NC}"
+            
+            # Create key.properties file
+            cat > "$NEW_DIR/android/key.properties" <<EOF
+# Android signing configuration
+# ⚠️  DO NOT commit this file to version control!
+storePassword=$KEYSTORE_PASSWORD
+keyPassword=$KEY_PASSWORD
+keyAlias=release
+storeFile=keystore/release.jks
+EOF
+            
+            echo -e "${GREEN}✓ key.properties created${NC}"
+            
+            # Save credentials to a secure file
+            cat > "$NEW_DIR/android/keystore/keystore_credentials.txt" <<EOF
+Android Release Keystore Credentials
+=====================================
+App Name: $APP_NAME
+Generated: $(date)
+
+⚠️  IMPORTANT: Keep these credentials safe and secure!
+⚠️  You will need these to sign app updates.
+⚠️  Loss of these credentials means you cannot update your app!
+
+Keystore Location: android/keystore/release.jks
+Key Alias: release
+Store Password: $KEYSTORE_PASSWORD
+Key Password: $KEY_PASSWORD
+
+Certificate Info:
+CN: $CERT_CN
+O: $CERT_O
+C: US
+
+Validity: 10000 days (~27 years)
+Key Algorithm: RSA
+Key Size: 2048 bits
+
+To get SHA-1 and SHA-256 fingerprints (for Firebase/Google Sign-In):
+keytool -list -v -keystore android/keystore/release.jks -alias release -storepass $KEYSTORE_PASSWORD
+
+SHA-1 Fingerprint:
+EOF
+            
+            # Get and append SHA-1 fingerprint
+            SHA1=$(keytool -list -v -keystore "$NEW_DIR/android/keystore/release.jks" -alias release -storepass "$KEYSTORE_PASSWORD" 2>/dev/null | grep "SHA1:" | awk '{print $2}')
+            SHA256=$(keytool -list -v -keystore "$NEW_DIR/android/keystore/release.jks" -alias release -storepass "$KEYSTORE_PASSWORD" 2>/dev/null | grep "SHA256:" | awk '{print $2}')
+            
+            echo "$SHA1" >> "$NEW_DIR/android/keystore/keystore_credentials.txt"
+            echo "" >> "$NEW_DIR/android/keystore/keystore_credentials.txt"
+            echo "SHA-256 Fingerprint:" >> "$NEW_DIR/android/keystore/keystore_credentials.txt"
+            echo "$SHA256" >> "$NEW_DIR/android/keystore/keystore_credentials.txt"
+            
+            echo -e "${GREEN}✓ Credentials saved to android/keystore/keystore_credentials.txt${NC}"
+            
+            # Update build.gradle to use keystore
+            GRADLE_FILE="$NEW_DIR/android/app/build.gradle"
+            if [ -f "$GRADLE_FILE" ]; then
+                echo -e "${CYAN}Configuring build.gradle for release signing...${NC}"
+                
+                # Check if key.properties loading already exists
+                if ! grep -q "def keystoreProperties" "$GRADLE_FILE"; then
+                    # Add keystore properties loading at the top of the file (after plugins)
+                    sed -i.bak '/^plugins {/,/^}$/a\
+\
+def keystoreProperties = new Properties()\
+def keystorePropertiesFile = rootProject.file('\''key.properties'\'')\
+if (keystorePropertiesFile.exists()) {\
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))\
+}
+' "$GRADLE_FILE"
+                fi
+                
+                # Add signing configs if not present
+                if ! grep -q "signingConfigs {" "$GRADLE_FILE"; then
+                    # Find the android { block and add signingConfigs
+                    sed -i.bak '/android {/a\
+    signingConfigs {\
+        release {\
+            if (keystorePropertiesFile.exists()) {\
+                keyAlias keystoreProperties['\''keyAlias'\'']\
+                keyPassword keystoreProperties['\''keyPassword'\'']\
+                storeFile file(keystoreProperties['\''storeFile'\''])\
+                storePassword keystoreProperties['\''storePassword'\'']\
+            }\
+        }\
+    }
+' "$GRADLE_FILE"
+                fi
+                
+                # Update buildTypes to use signing config
+                if grep -q "buildTypes {" "$GRADLE_FILE"; then
+                    # Add signingConfig to release buildType
+                    sed -i.bak '/release {/a\
+            signingConfig signingConfigs.release
+' "$GRADLE_FILE"
+                fi
+                
+                rm -f "$GRADLE_FILE.bak"
+                echo -e "${GREEN}✓ build.gradle configured for release signing${NC}"
+            else
+                echo -e "${YELLOW}⚠️  build.gradle not found yet (will be created by Flutter)${NC}"
+            fi
+            
+            # Add SHA fingerprints to Firebase if project exists
+            if [ -n "$FIREBASE_PROJECT_ID" ] && [ "$FIREBASE_CONFIGURED" = true ]; then
+                echo -e "\n${YELLOW}Would you like to add the SHA-1 fingerprint to Firebase?${NC}"
+                echo -e "${CYAN}(Required for Google Sign-In on Android)${NC}"
+                echo -e "${CYAN}SHA-1: $SHA1${NC}"
+                read -p "Add to Firebase? (y/n): " ADD_SHA_TO_FIREBASE
+                
+                if [[ "$ADD_SHA_TO_FIREBASE" =~ ^[Yy]$ ]]; then
+                    echo -e "${CYAN}Adding SHA fingerprints to Firebase...${NC}"
+                    echo -e "${YELLOW}Note: This requires manual addition in Firebase Console${NC}"
+                    echo -e "${YELLOW}Go to: Project Settings → Your Android app → Add fingerprint${NC}"
+                    echo -e "${CYAN}SHA-1: $SHA1${NC}"
+                    echo -e "${CYAN}SHA-256: $SHA256${NC}"
+                    
+                    # Open Firebase Console in browser
+                    if command -v open &> /dev/null; then
+                        open "https://console.firebase.google.com/project/$FIREBASE_PROJECT_ID/settings/general"
+                    elif command -v xdg-open &> /dev/null; then
+                        xdg-open "https://console.firebase.google.com/project/$FIREBASE_PROJECT_ID/settings/general"
+                    fi
+                fi
+            fi
+            
+            KEYSTORE_CREATED=true
+            
+            echo -e "\n${GREEN}✅ Android keystore setup complete!${NC}"
+            echo -e "${YELLOW}⚠️  IMPORTANT:${NC}"
+            echo -e "  • Credentials saved in: ${CYAN}android/keystore/keystore_credentials.txt${NC}"
+            echo -e "  • ${RED}Back up this file securely!${NC}"
+            echo -e "  • The keystore folder is git-ignored for security"
+            echo -e "  • You'll need these credentials to release app updates"
+        else
+            echo -e "${RED}❌ Failed to generate keystore${NC}"
+            KEYSTORE_CREATED=false
+        fi
+    fi
+else
+    echo -e "${YELLOW}Skipping keystore generation${NC}"
+    echo -e "${CYAN}You can generate it later with: keytool -genkey ...${NC}"
+fi
+
+# ============================================================================
+# STEP 7: Update Documentation
+# ============================================================================
+
+echo -e "\n${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}         Step 7: Generating Documentation${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
 
 cd ..
@@ -558,6 +750,33 @@ This file contains the identity information for your application.
 - **App Directory**: $NEW_DIR/
 - **Created Date**: $(date)
 $FIREBASE_SECTION
+## Android Signing
+EOF
+
+if [ "$KEYSTORE_CREATED" = true ]; then
+    cat >> PROJECT_INFO.md << EOF
+- **Keystore**: ✅ Generated
+- **Location**: $NEW_DIR/android/keystore/release.jks
+- **Credentials File**: $NEW_DIR/android/keystore/keystore_credentials.txt
+- **⚠️  IMPORTANT**: Back up the keystore and credentials securely!
+- **SHA-1 Fingerprint**: $SHA1
+- **SHA-256 Fingerprint**: $SHA256
+
+To add SHA fingerprints to Firebase (required for Google Sign-In):
+1. Go to: https://console.firebase.google.com/project/$FIREBASE_PROJECT_ID/settings/general
+2. Select your Android app
+3. Click "Add fingerprint"
+4. Add the SHA-1 and SHA-256 fingerprints above
+EOF
+else
+    cat >> PROJECT_INFO.md << EOF
+- **Keystore**: Not generated yet
+- **To generate**: Run \`./setup.sh\` again or use keytool manually
+EOF
+fi
+
+cat >> PROJECT_INFO.md << EOF
+
 ## Configuration Status
 - [x] Project renamed
 - [x] Bundle identifiers updated
@@ -565,6 +784,15 @@ $FIREBASE_SECTION
 - $FIREBASE_CONFIGURED_CHECK Firebase configured
 - [ ] Firebase services enabled (Auth, Firestore, Storage)
 - $RULES_DEPLOYED_CHECK Security rules deployed
+EOF
+
+if [ "$KEYSTORE_CREATED" = true ]; then
+    echo "- [x] Android keystore generated" >> PROJECT_INFO.md
+else
+    echo "- [ ] Android keystore generated" >> PROJECT_INFO.md
+fi
+
+cat >> PROJECT_INFO.md << EOF
 
 ## Next Steps
 EOF
@@ -651,6 +879,21 @@ if [ "$FIREBASE_CONFIGURED" = true ]; then
     echo -e "   ${CYAN}cd $NEW_DIR && flutter run -d chrome${NC}"
     echo -e "   ${CYAN}cd $NEW_DIR && flutter run${NC} (for mobile)"
     echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+    
+    if [ "$KEYSTORE_CREATED" = true ]; then
+        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+        echo -e "${BLUE}                Android Keystore Generated${NC}"
+        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}"
+        echo -e "${GREEN}✓${NC} Keystore: ${CYAN}$NEW_DIR/android/keystore/release.jks${NC}"
+        echo -e "${GREEN}✓${NC} Credentials: ${CYAN}$NEW_DIR/android/keystore/keystore_credentials.txt${NC}"
+        echo -e "${GREEN}✓${NC} SHA-1: ${CYAN}$SHA1${NC}"
+        echo -e "${RED}⚠️  IMPORTANT: Back up your keystore securely!${NC}"
+        echo -e "\n${YELLOW}To add SHA fingerprints to Firebase (for Google Sign-In):${NC}"
+        echo -e "   1. Go to Firebase Console → Settings → Your Android app"
+        echo -e "   2. Click 'Add fingerprint'"
+        echo -e "   3. Add SHA-1: ${CYAN}$SHA1${NC}"
+        echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
+    fi
     
     echo -e "${GREEN}🚀 Your app is fully configured and ready to run!${NC}\n"
 else

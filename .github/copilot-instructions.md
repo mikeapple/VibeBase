@@ -14,11 +14,15 @@ VibeBase is designed to be **cloned and customized**, not used directly:
 See [TEMPLATE_USAGE.md](../TEMPLATE_USAGE.md) for detailed template usage.
 
 ## Quick Start (For New Projects)
-1. Run `./setup.sh` - Wizard customizes app name, bundle IDs, and installs dependencies
-2. Create Firebase project at console.firebase.google.com
-3. Run `./configure_firebase.sh` with your Firebase Project ID
-4. Enable Firebase services (Auth, Firestore, Storage)
-5. Run `flutter run` from `your_app_name_app/` directory
+1. Run `./setup.sh` - Wizard customizes app name, bundle IDs, installs dependencies, creates Firebase project, generates Android keystore
+2. Enable Firebase services (Auth, Firestore, Storage) in Firebase Console
+3. Run `flutter run` from `your_app_name_app/` directory
+
+**The setup script now handles:**
+- Firebase project creation with retry logic (waits up to 2 minutes for propagation)
+- Authentication provider configuration (Email/Password, Anonymous)
+- Android release keystore generation with SHA fingerprints
+- All configuration files and build setup
 
 See [SETUP_GUIDE.md](../SETUP_GUIDE.md) for detailed instructions.
 
@@ -55,9 +59,9 @@ vibebase_app/lib/
 
 ### Initial Setup (One-time)
 ```bash
-./setup.sh                    # Install dependencies
-./configure_firebase.sh       # Configure Firebase
-firebase deploy --only firestore:rules,storage:rules
+./setup.sh                    # Interactive wizard: renames app, creates Firebase project, generates Android keystore
+# Optionally: Enable auth providers, deploy security rules during setup
+firebase deploy --only firestore:rules,storage:rules  # If not done during setup
 ```
 
 ### Daily Development
@@ -134,15 +138,17 @@ void main() async {
 ## Key Files & Directories
 
 ### Scripts (Root Level)
-- `setup.sh` - **Interactive wizard** that customizes app (name, IDs), renames directories, installs dependencies
+- `setup.sh` - **Interactive wizard** that customizes app (name, IDs), renames directories, installs dependencies, creates Firebase project, generates Android keystore
 - `configure_firebase.sh` - Firebase project configuration (auto-detects app directory)
+- `configure_android_signing.sh` - Configures build.gradle for release signing
 - `deploy.sh` - Multi-platform deployment (auto-detects app directory)
+- `reset_to_vibebase.sh` - Resets project to template state
 
 ### Configuration (Root Level)
 - `firebase.json` - Firebase project configuration (hosting, rules paths)
 - `firestore.rules` - Database security rules with helper functions
 - `storage.rules` - File storage security rules
-- `.gitignore` - Excludes `firebase_options.dart`, credentials, build artifacts
+- `.gitignore` - Excludes `firebase_options.dart`, credentials, build artifacts, **Android keystore files**
 
 ### Documentation (Root Level)
 - `README.md` - Quick start guide
@@ -162,9 +168,10 @@ void main() async {
 - **Platform Config**: Auto-handled by `DefaultFirebaseOptions.currentPlatform`
 
 ### Platform-Specific
-- Android: `minSdkVersion 21` in `android/app/build.gradle`
+- Android: `minSdkVersion 21` in `android/app/build.gradle`, **release signing auto-configured with keystore**
 - iOS: Development team auto-selected: "Apple Development: Mike Appleton"
 - Web: Firebase Hosting configured to `vibebase_app/build/web`
+- Android Keystore: Generated at `android/keystore/release.jks` with credentials in `keystore_credentials.txt`
 
 ### External Dependencies
 Core packages (see `vibebase_app/pubspec.yaml`):
@@ -190,9 +197,12 @@ Deploy with: `firebase deploy --only firestore:rules,storage:rules`
 
 ## Important Notes
 - **Never commit** `firebase_options.dart`, `google-services.json`, or `GoogleService-Info.plist`
+- **Never commit** Android keystore files (automatically git-ignored)
+- **Always back up** `android/keystore/` folder - you cannot update your app without it!
 - **Security rules** default to restrictive - customize for your use case
 - **Scripts are automated** - prefer running scripts over manual commands
 - **See ACTION_ITEMS.md** for current development status and next steps
+- **See ANDROID_SIGNING.md** for detailed keystore documentation
 
 ---
 *Last Updated: October 1, 2025*

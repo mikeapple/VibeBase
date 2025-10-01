@@ -50,7 +50,7 @@ The interactive wizard will:
 
 ### 4. Start Building
 ```bash
-cd your_app_name_app
+cd vibebase_app
 flutter run
 ```
 
@@ -89,6 +89,7 @@ After reset, run `./setup.sh` again to create a new project!
 - Dependency installation
 - **Firebase project creation with retry logic**
 - **Authentication provider configuration**
+- **Android keystore generation** - Automatic release signing setup
 
 ### Pre-Built Services
 - **AuthService** - Complete authentication with error handling
@@ -98,8 +99,9 @@ After reset, run `./setup.sh` again to create a new project!
 - **Constants** - Centralized configuration
 
 ### Automation Scripts
-- `setup.sh` - **One-and-done setup** with Firebase project creation
+- `setup.sh` - **One-and-done setup** with Firebase project creation and keystore generation
 - `configure_firebase.sh` - Connect to existing Firebase project
+- `configure_android_signing.sh` - Configure build.gradle for release signing
 - `deploy.sh` - Deploy to Web, build Android/iOS apps
 - `reset_to_vibebase.sh` - **Reset to template state**
 
@@ -171,11 +173,42 @@ The setup script can automatically enable:
 - 📝 **Google Sign-In** - Instructions provided for platform-specific setup
 - 📝 **Apple Sign-In** - Manual setup required (Apple Developer account needed)
 
-## 🔒 Security
+## � Android Signing (NEW!)
+
+The setup script now automatically generates a release keystore:
+- ✅ **Keystore Creation** - Generates secure release.jks with strong passwords
+- ✅ **SHA Fingerprints** - Automatically extracted for Firebase/Google Sign-In
+- ✅ **Build Configuration** - Sets up build.gradle for release signing
+- ✅ **Credentials Storage** - Saves all credentials securely in `keystore_credentials.txt`
+- ⚠️ **Backup Reminder** - Keystore folder is git-ignored for security
+
+### What Gets Generated:
+```
+your_app_name_app/android/
+├── keystore/
+│   ├── release.jks                    # Your release keystore (git-ignored)
+│   └── keystore_credentials.txt       # Passwords & SHA fingerprints (git-ignored)
+└── key.properties                     # Build configuration (git-ignored)
+```
+
+### Using the Keystore:
+```bash
+# Build signed release APK
+cd vibebase_app
+flutter build apk --release
+
+# Build signed App Bundle (for Play Store)
+flutter build appbundle --release
+```
+
+The SHA-1 fingerprint is automatically added to `PROJECT_INFO.md` and can be added to Firebase for Google Sign-In.
+
+## �🔒 Security
 
 The template includes production-ready security rules for:
 - **Firestore** - User-scoped read/write access with helper functions
 - **Storage** - User-scoped file access with size/type validation
+- **Android Keystore** - Git-ignored and securely stored
 
 Deploy with:
 ```bash
@@ -205,6 +238,9 @@ firebase deploy --only firestore:rules,storage:rules
 3. **Firebase Propagation**: The setup script automatically waits for new Firebase projects to be available
 4. **Authentication**: Email/Password auth is enabled automatically during setup
 5. **Custom Code**: All your custom code in services/models/screens/widgets is preserved during reset
+6. **Keystore Backup**: ALWAYS back up `android/keystore/` folder - you can't update your app without it!
+7. **SHA Fingerprints**: Automatically generated and saved - add to Firebase for Google Sign-In
+8. **Release Builds**: Your app is automatically signed when you run `flutter build apk/appbundle --release`
 
 ## 🤝 Contributing
 

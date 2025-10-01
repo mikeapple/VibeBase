@@ -48,29 +48,28 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCGk3uIctgw0wx-b2Mi1lDZMFYADcHrrSM',
-    appId: '1:241414034513:web:7fb63f9b93f8f996fd9470',
-    messagingSenderId: '241414034513',
-    projectId: 'testg2-8640',
-    authDomain: 'testg2-8640.firebaseapp.com',
-    storageBucket: 'testg2-8640.firebasestorage.app',
+    apiKey: 'YOUR_API_KEY',
+    appId: 'YOUR_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'your-project-id',
+    authDomain: 'your-project-id.firebaseapp.com',
+    storageBucket: 'your-project-id.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAse95eBJ9bcaz9WmtBt_1clGbJfDTaxtg',
-    appId: '1:241414034513:android:9d85d4b6c2c03e8cfd9470',
-    messagingSenderId: '241414034513',
-    projectId: 'testg2-8640',
-    storageBucket: 'testg2-8640.firebasestorage.app',
+    apiKey: 'YOUR_API_KEY',
+    appId: 'YOUR_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'your-project-id',
+    storageBucket: 'your-project-id.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCIahd0GVTAGsJH-kAdBxjjd4Z3GpZaTqw',
-    appId: '1:241414034513:ios:f08a6c9da0de19bdfd9470',
-    messagingSenderId: '241414034513',
-    projectId: 'testg2-8640',
-    storageBucket: 'testg2-8640.firebasestorage.app',
+    apiKey: 'YOUR_API_KEY',
+    appId: 'YOUR_APP_ID',
+    messagingSenderId: 'YOUR_SENDER_ID',
+    projectId: 'your-project-id',
+    storageBucket: 'your-project-id.appspot.com',
     iosBundleId: 'com.vibebase.vibebaseApp',
   );
-
 }

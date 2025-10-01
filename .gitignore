@@ -67,6 +67,10 @@ secrets/
 *.jks
 *.keystore
 
+# Android signing keystore
+**/android/keystore/
+**/android/key.properties
+
 # macOS
 .DS_Store
 .AppleDouble
