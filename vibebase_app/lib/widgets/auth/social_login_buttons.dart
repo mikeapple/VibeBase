@@ -1,8 +1,19 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
+
+// Platform detection helper that works on web
+bool get isIOS {
+  if (kIsWeb) return false;
+  try {
+    // Only import dart:io on non-web platforms
+    return const bool.fromEnvironment('dart.library.io') && 
+           Theme.of(WidgetsBinding.instance.platformDispatcher.views.first as BuildContext).platform == TargetPlatform.iOS;
+  } catch (e) {
+    return false;
+  }
+}
 
 class SocialLoginButtons extends ConsumerWidget {
   final bool showGoogle;
@@ -16,6 +27,9 @@ class SocialLoginButtons extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Check platform in a web-safe way
+    final platformIsIOS = !kIsWeb && Theme.of(context).platform == TargetPlatform.iOS;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -23,7 +37,7 @@ class SocialLoginButtons extends ConsumerWidget {
           _GoogleSignInButton(onPressed: () => _signInWithGoogle(context, ref)),
           const SizedBox(height: 12),
         ],
-        if (showApple && (Platform.isIOS || kIsWeb)) ...[
+        if (showApple && platformIsIOS) ...[
           _AppleSignInButton(onPressed: () => _signInWithApple(context, ref)),
         ],
       ],

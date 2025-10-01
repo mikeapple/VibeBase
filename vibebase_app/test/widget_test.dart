@@ -14,7 +14,7 @@ import 'package:vibebase_app/main.dart';
 void main() {
   testWidgets('App launches and shows navigation', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: VibeBaseApp()));
+    await tester.pumpWidget(const ProviderScope(child: MainApp()));
 
     // Wait for Firebase initialization
     await tester.pumpAndSettle();

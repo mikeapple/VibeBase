@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/auth_provider.dart';
@@ -83,9 +81,11 @@ class ProfileScreen extends ConsumerWidget {
               const SizedBox(height: 24),
 
               // Social login buttons
-              SocialLoginButtons(
-                showGoogle: kIsWeb || Platform.isAndroid || Platform.isIOS,
-                showApple: Platform.isIOS,
+              // Note: Google Sign-In works on all platforms
+              // Apple Sign-In only works on iOS (handled in the widget itself)
+              const SocialLoginButtons(
+                showGoogle: true,
+                showApple: true,  // Widget will check platform internally
               ),
             ],
           ),

@@ -2,8 +2,28 @@
 
 # VibeBase Setup Script
 # This script automates the setup and customization of your Flutter application with Firebase
+# Usage: ./setup.sh [-y|--yes] to auto-accept all prompts
 
 set -e  # Exit on error
+
+# Parse command line arguments
+AUTO_YES=false
+for arg in "$@"; do
+    case $arg in
+        -y|--yes)
+            AUTO_YES=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: ./setup.sh [-y|--yes]"
+            echo ""
+            echo "Options:"
+            echo "  -y, --yes    Automatically answer yes to all prompts"
+            echo "  -h, --help   Show this help message"
+            exit 0
+            ;;
+    esac
+done
 
 # Colors for output
 RED='\033[0;31m'
@@ -19,6 +39,10 @@ echo "║                   🚀 VibeBase Setup Wizard                    ║"
 echo "║          Transform VibeBase into Your Custom App              ║"
 echo "╚════════════════════════════════════════════════════════════════╝"
 echo -e "${NC}\n"
+
+if [ "$AUTO_YES" = true ]; then
+    echo -e "${GREEN}🤖 Auto-accept mode enabled (all prompts will default to yes)${NC}\n"
+fi
 
 # Check if Flutter is installed
 if ! command -v flutter &> /dev/null; then
@@ -40,9 +64,14 @@ echo -e "${BLUE}         Step 1: Project Identity Configuration${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
 
 # App Name
-echo -e "${YELLOW}Enter your app name (e.g., 'MyAwesomeApp'):${NC}"
-echo -e "${CYAN}This will be displayed to users and used for branding.${NC}"
-read -p "App Name: " APP_NAME
+if [ "$AUTO_YES" = true ]; then
+    APP_NAME="MyApp"
+    echo -e "${GREEN}✓ Using default app name: $APP_NAME${NC}"
+else
+    echo -e "${YELLOW}Enter your app name (e.g., 'MyAwesomeApp'):${NC}"
+    echo -e "${CYAN}This will be displayed to users and used for branding.${NC}"
+    read -p "App Name: " APP_NAME
+fi
 
 if [ -z "$APP_NAME" ]; then
     echo -e "${RED}App name cannot be empty. Exiting.${NC}"
@@ -54,9 +83,14 @@ APP_ID=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd '[:
 echo -e "${GREEN}✓ Generated app identifier: ${APP_ID}${NC}\n"
 
 # Package/Bundle Identifier
-echo -e "${YELLOW}Enter your organization identifier (e.g., 'com.mycompany' or 'io.github.username'):${NC}"
-echo -e "${CYAN}This is used for Android/iOS bundle identifiers.${NC}"
-read -p "Organization ID: " ORG_ID
+if [ "$AUTO_YES" = true ]; then
+    ORG_ID="com.example"
+    echo -e "${GREEN}✓ Using default organization: $ORG_ID${NC}"
+else
+    echo -e "${YELLOW}Enter your organization identifier (e.g., 'com.mycompany' or 'io.github.username'):${NC}"
+    echo -e "${CYAN}This is used for Android/iOS bundle identifiers.${NC}"
+    read -p "Organization ID: " ORG_ID
+fi
 
 if [ -z "$ORG_ID" ]; then
     echo -e "${YELLOW}No organization ID provided. Using 'com.example'${NC}"
@@ -67,8 +101,13 @@ BUNDLE_ID="${ORG_ID}.${APP_ID}"
 echo -e "${GREEN}✓ Bundle identifier will be: ${BUNDLE_ID}${NC}\n"
 
 # App Description
-echo -e "${YELLOW}Enter a short description of your app:${NC}"
-read -p "Description: " APP_DESCRIPTION
+if [ "$AUTO_YES" = true ]; then
+    APP_DESCRIPTION="A Flutter application built with Firebase"
+    echo -e "${GREEN}✓ Using default description${NC}"
+else
+    echo -e "${YELLOW}Enter a short description of your app:${NC}"
+    read -p "Description: " APP_DESCRIPTION
+fi
 
 if [ -z "$APP_DESCRIPTION" ]; then
     APP_DESCRIPTION="A Flutter application built with Firebase"
@@ -85,7 +124,12 @@ echo -e "${CYAN}Organization:${NC}      $ORG_ID"
 echo -e "${CYAN}Description:${NC}       $APP_DESCRIPTION"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
 
-read -p "Is this information correct? (y/n): " CONFIRM
+if [ "$AUTO_YES" = true ]; then
+    CONFIRM="y"
+    echo -e "${GREEN}✓ Auto-confirmed${NC}"
+else
+    read -p "Is this information correct? (y/n): " CONFIRM
+fi
 
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Setup cancelled. Please run the script again.${NC}"
@@ -260,7 +304,13 @@ cd ..
 # Ask if user wants automatic Firebase setup
 echo -e "${YELLOW}Would you like to automatically create and configure a Firebase project?${NC}"
 echo -e "${CYAN}(This will create a new Firebase project with your app name)${NC}"
-read -p "Auto-create Firebase project? (y/n): " AUTO_FIREBASE
+
+if [ "$AUTO_YES" = true ]; then
+    AUTO_FIREBASE="y"
+    echo -e "${GREEN}✓ Auto-confirmed: Yes${NC}"
+else
+    read -p "Auto-create Firebase project? (y/n): " AUTO_FIREBASE
+fi
 
 if [[ "$AUTO_FIREBASE" =~ ^[Yy]$ ]]; then
     # Generate Firebase project ID (must be globally unique)
@@ -342,7 +392,13 @@ if [[ "$AUTO_FIREBASE" =~ ^[Yy]$ ]]; then
             # Ask if user wants to deploy security rules immediately
             echo -e "\n${YELLOW}Would you like to deploy the security rules now?${NC}"
             echo -e "${CYAN}(This will set up secure defaults for Firestore and Storage)${NC}"
-            read -p "Deploy security rules? (y/n): " DEPLOY_RULES
+            
+            if [ "$AUTO_YES" = true ]; then
+                DEPLOY_RULES="y"
+                echo -e "${GREEN}✓ Auto-confirmed: Yes${NC}"
+            else
+                read -p "Deploy security rules? (y/n): " DEPLOY_RULES
+            fi
             
             if [[ "$DEPLOY_RULES" =~ ^[Yy]$ ]]; then
                 echo -e "\n${YELLOW}Deploying security rules...${NC}"
@@ -364,7 +420,13 @@ if [[ "$AUTO_FIREBASE" =~ ^[Yy]$ ]]; then
             # Configure Authentication
             echo -e "\n${YELLOW}Would you like to enable Firebase Authentication?${NC}"
             echo -e "${CYAN}(This will enable Email/Password, Google, and Apple Sign-In)${NC}"
-            read -p "Enable authentication providers? (y/n): " ENABLE_AUTH
+            
+            if [ "$AUTO_YES" = true ]; then
+                ENABLE_AUTH="y"
+                echo -e "${GREEN}✓ Auto-confirmed: Yes${NC}"
+            else
+                read -p "Enable authentication providers? (y/n): " ENABLE_AUTH
+            fi
             
             AUTH_CONFIGURED=false
             if [[ "$ENABLE_AUTH" =~ ^[Yy]$ ]]; then
@@ -500,7 +562,13 @@ echo -e "${BLUE}═════════════════════�
 
 echo -e "${YELLOW}Would you like to generate an Android release keystore?${NC}"
 echo -e "${CYAN}(Required for releasing Android apps to Google Play Store)${NC}"
-read -p "Generate keystore? (y/n): " GENERATE_KEYSTORE
+
+if [ "$AUTO_YES" = true ]; then
+    GENERATE_KEYSTORE="y"
+    echo -e "${GREEN}✓ Auto-confirmed: Yes${NC}"
+else
+    read -p "Generate keystore? (y/n): " GENERATE_KEYSTORE
+fi
 
 KEYSTORE_CREATED=false
 if [[ "$GENERATE_KEYSTORE" =~ ^[Yy]$ ]]; then
@@ -646,7 +714,13 @@ if (keystorePropertiesFile.exists()) {\
                 echo -e "\n${YELLOW}Would you like to add the SHA-1 fingerprint to Firebase?${NC}"
                 echo -e "${CYAN}(Required for Google Sign-In on Android)${NC}"
                 echo -e "${CYAN}SHA-1: $SHA1${NC}"
-                read -p "Add to Firebase? (y/n): " ADD_SHA_TO_FIREBASE
+                
+                if [ "$AUTO_YES" = true ]; then
+                    ADD_SHA_TO_FIREBASE="y"
+                    echo -e "${GREEN}✓ Auto-confirmed: Yes${NC}"
+                else
+                    read -p "Add to Firebase? (y/n): " ADD_SHA_TO_FIREBASE
+                fi
                 
                 if [[ "$ADD_SHA_TO_FIREBASE" =~ ^[Yy]$ ]]; then
                     echo -e "${CYAN}Adding SHA fingerprints to Firebase...${NC}"

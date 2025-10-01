@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -90,9 +89,10 @@ class AuthService {
   /// Sign in with Apple (iOS only)
   Future<UserCredential?> signInWithApple() async {
     try {
-      // Check if Apple Sign In is available
-      if (!kIsWeb && !Platform.isIOS) {
-        throw 'Apple Sign In is only available on iOS';
+      // Check if Apple Sign In is available (only on iOS)
+      // On web, this will throw an error from the sign_in_with_apple package
+      if (kIsWeb) {
+        throw 'Apple Sign In is not supported on web';
       }
 
       // Request credential for the currently signed in Apple account

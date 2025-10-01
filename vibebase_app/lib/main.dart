@@ -14,18 +14,18 @@ void main() async {
   
   runApp(
     const ProviderScope(
-      child: VibeBaseApp(),
+      child: MainApp(),
     ),
   );
 }
 
-class VibeBaseApp extends StatelessWidget {
-  const VibeBaseApp({super.key});
+class MainApp extends StatelessWidget {
+  const MainApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'VibeBase',
+      title: 'Flutter App',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
