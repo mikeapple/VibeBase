@@ -42,6 +42,22 @@ dependencies:
   firebase_storage: ^12.4.10
   firebase_analytics: ^11.6.0
 
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Google Sign-In
+  google_sign_in: ^6.2.1
+  
+  # Apple Sign-In (iOS)
+  sign_in_with_apple: ^6.1.0
+  
+  # URL launcher for policies
+  url_launcher: ^6.3.0
+  
+  # Loading indicators
+  loading_animation_widget: ^1.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -52,6 +68,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
+  # Riverpod code generation
+  riverpod_generator: ^2.4.0
+  build_runner: ^2.4.9
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
   
   # Development tools
   flutter_launcher_icons: ^0.14.4

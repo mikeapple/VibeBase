@@ -1,9 +1,14 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 /// Authentication service for handling user authentication
-/// with Firebase Authentication.
+/// with Firebase Authentication including social sign-in.
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   /// Get current user
   User? get currentUser => _auth.currentUser;
@@ -55,6 +60,97 @@ class AuthService {
     }
   }
 
+  /// Sign in with Google
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        // User canceled the sign-in
+        return null;
+      }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      return await _auth.signInWithCredential(credential);
+    } catch (e) {
+      throw 'Failed to sign in with Google: ${e.toString()}';
+    }
+  }
+
+  /// Sign in with Apple (iOS only)
+  Future<UserCredential?> signInWithApple() async {
+    try {
+      // Check if Apple Sign In is available
+      if (!kIsWeb && !Platform.isIOS) {
+        throw 'Apple Sign In is only available on iOS';
+      }
+
+      // Request credential for the currently signed in Apple account
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+      );
+
+      // Create an OAuthCredential from the credential returned by Apple
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+      );
+
+      // Sign in to Firebase with the Apple credential
+      return await _auth.signInWithCredential(oauthCredential);
+    } catch (e) {
+      throw 'Failed to sign in with Apple: ${e.toString()}';
+    }
+  }
+
+  /// Sign in anonymously
+  Future<UserCredential> signInAnonymously() async {
+    try {
+      return await _auth.signInAnonymously();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  /// Update user profile
+  Future<void> updateProfile({
+    String? displayName,
+    String? photoURL,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.updateDisplayName(displayName);
+        await user.updatePhotoURL(photoURL);
+        await user.reload();
+      }
+    } catch (e) {
+      throw 'Failed to update profile: ${e.toString()}';
+    }
+  }
+
+  /// Delete user account
+  Future<void> deleteAccount() async {
+    try {
+      await _auth.currentUser?.delete();
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
   /// Handle Firebase Auth exceptions
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
@@ -68,6 +164,12 @@ class AuthService {
         return 'The password is too weak.';
       case 'invalid-email':
         return 'The email address is invalid.';
+      case 'user-disabled':
+        return 'This user account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
+      case 'operation-not-allowed':
+        return 'This sign-in method is not enabled.';
       default:
         return 'An error occurred. Please try again.';
     }
